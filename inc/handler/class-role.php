@@ -3,6 +3,7 @@ declare(strict_types = 1);
 
 namespace epiphyt\Product_Visibility\handler;
 
+use WC_Product;
 use WP_User;
 
 /**
@@ -36,7 +37,7 @@ final class Role {
 		}
 		
 		if ( empty( $meta ) ) {
-			return false;
+			return true;
 		}
 		
 		return ! empty( \array_intersect( $meta, (array) $user->roles ) );
@@ -74,13 +75,21 @@ final class Role {
 			return [];
 		}
 		
-		$meta = \get_post_meta( $post_id, 'product_visibility_roles' );
+		$product = \wc_get_product( $post_id );
 		
-		if ( ! \is_array( $meta ) ) {
+		if ( ! $product instanceof WC_Product ) {
 			return [];
 		}
 		
-		return \array_filter( $meta );
+		/** @var \WC_Meta_Data[] $meta */
+		$meta = $product->get_meta( 'product_visibility_roles', false );
+		$metadata = [];
+		
+		foreach ( $meta as $meta_data ) {
+			$metadata[] = $meta_data->get_data()['value'];
+		}
+		
+		return $metadata;
 	}
 	
 	/**

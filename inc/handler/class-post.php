@@ -3,6 +3,8 @@ declare(strict_types = 1);
 
 namespace epiphyt\Product_Visibility\handler;
 
+use WC_Product;
+
 /**
  * Post related functionality.
  * 
@@ -35,7 +37,7 @@ final class Post {
 			return;
 		}
 		
-		$url = \get_permalink( \wc_get_page_id( 'shop' ) );
+		$url = (string) \get_permalink( \wc_get_page_id( 'shop' ) );
 		
 		/**
 		 * Filter the redirect URL.
@@ -43,6 +45,10 @@ final class Post {
 		 * @param	string	$url Redirect URL
 		 */
 		$url = \apply_filters( 'product_visibility_redirect_url', $url );
+		
+		if ( empty( $url ) ) {
+			$url = \home_url();
+		}
 		
 		\wp_safe_redirect( $url, 307 );
 		exit;
@@ -62,6 +68,11 @@ final class Post {
 			'roles' => Role::get_meta( $post_id ),
 			'users' => User::get_meta( $post_id ),
 		];
+		$product = \wc_get_product( $post_id );
+		
+		if ( ! $product instanceof WC_Product ) {
+			return;
+		}
 		
 		foreach ( [ 'roles', 'users' ] as $type ) {
 			// phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
@@ -69,22 +80,24 @@ final class Post {
 				empty( $_POST[ 'product_visibility_' . $type ] )
 				|| ! \is_array( $_POST[ 'product_visibility_' . $type ] )
 			) {
-				\delete_post_meta( $post_id, 'product_visibility_' . $type );
+				$product->delete_meta_data( 'product_visibility_' . $type );
 			}
 			else {
 				$deletable = \array_diff( $data[ $type ], \wp_unslash( $_POST[ 'product_visibility_' . $type ] ) );
 				
 				foreach ( $deletable as $meta ) {
-					\delete_post_meta( $post_id, 'product_visibility_' . $type, $meta );
+					$product->delete_meta_data_value( 'product_visibility_' . $type, $meta );
 				}
 				
 				foreach ( \wp_unslash( $_POST[ 'product_visibility_' . $type ] ) as $meta ) {
 					if ( ! \in_array( $meta, $data[ $type ], true ) ) {
-						\add_post_meta( $post_id, 'product_visibility_' . $type , $meta );
+						$product->add_meta_data( 'product_visibility_' . $type , $meta );
 					}
 				}
 			}
 			// phpcs:enable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			
+			$product->save();
 		}
 	}
 }

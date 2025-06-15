@@ -3,6 +3,7 @@ declare(strict_types = 1);
 
 namespace epiphyt\Product_Visibility;
 
+use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
 use epiphyt\Product_Visibility\handler\Role;
 use epiphyt\Product_Visibility\handler\User;
 use WP_Screen;
@@ -106,11 +107,20 @@ final class Admin {
 	 * Register meta boxes.
 	 */
 	public static function register_meta_boxes(): void {
+		$screen = 'product';
+		
+		if (
+			\class_exists( '\Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController' )
+			&& \wc_get_container()->get( CustomOrdersTableController::class )->custom_orders_table_usage_is_enabled() // @phpstan-ignore method.nonObject
+		) {
+			$screen = \wc_get_page_screen_id( 'product' );
+		}
+		
 		\add_meta_box(
 			'product-visibility',
 			\__( 'Product Visibility', 'product-visibility' ),
 			[ self::class, 'get_meta_box_content' ],
-			'product',
+			$screen,
 			'side'
 		);
 	}

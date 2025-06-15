@@ -3,6 +3,8 @@ declare(strict_types = 1);
 
 namespace epiphyt\Product_Visibility\handler;
 
+use WC_Product;
+
 /**
  * User related functionality.
  * 
@@ -29,7 +31,7 @@ final class User {
 		$meta = self::get_meta( $post_id );
 		
 		if ( empty( $meta ) ) {
-			return false;
+			return true;
 		}
 		
 		return \in_array( (string) $user_id, $meta, true );
@@ -62,13 +64,21 @@ final class User {
 			return [];
 		}
 		
-		$meta = \get_post_meta( $post_id, 'product_visibility_users' );
+		$product = \wc_get_product( $post_id );
 		
-		if ( ! \is_array( $meta ) ) {
+		if ( ! $product instanceof WC_Product ) {
 			return [];
 		}
 		
-		return \array_filter( $meta );
+		/** @var \WC_Meta_Data[] $meta */
+		$meta = $product->get_meta( 'product_visibility_users', false );
+		$metadata = [];
+		
+		foreach ( $meta as $meta_data ) {
+			$metadata[] = $meta_data->get_data()['value'];
+		}
+		
+		return $metadata;
 	}
 	
 	/**
