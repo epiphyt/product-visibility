@@ -21,3 +21,12 @@ jobs:
       env:
         SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
         SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+    - name: Deploy plugin to kittmedia.com
+      uses: Burnett01/rsync-deployments@7.0.1
+      with:
+        switches: -ahv --exclude-from=".github/exclude_list" --exclude="${{ github.event.repository.name }}.zip" --exclude=".git"
+        path: .
+        remote_path: /home/wp.kittmedia.com/wp-content/plugins/product-visibility
+        remote_host: ${{ secrets.REMOTE_HOST }}
+        remote_user: ${{ secrets.REMOTE_USER }}
+        remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
